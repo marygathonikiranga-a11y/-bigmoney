@@ -61,7 +61,7 @@ const TradingChart = ({ data, asset }: Props) => {
         </div>
       </div>
 
-      <div className="flex-1 p-2">
+      <div className="flex-1 p-2" style={{ minHeight: "300px" }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={lineData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
             <defs>

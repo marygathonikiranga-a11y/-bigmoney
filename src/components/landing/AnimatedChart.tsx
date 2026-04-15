@@ -28,7 +28,7 @@ const AnimatedChart = () => {
   }, []);
 
   return (
-    <div className="absolute inset-0 opacity-20">
+    <div className="absolute inset-0 opacity-20" style={{ minHeight: "400px" }}>
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
           <defs>
