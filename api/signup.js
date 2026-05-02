@@ -2,12 +2,24 @@ import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
+const dbConnectionString = process.env.DATABASE_URL;
+if (!dbConnectionString) {
+  console.error('Missing DATABASE_URL environment variable for API signup route.');
+}
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbConnectionString,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 });
 
+const isValidEmail = (email) => typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const getRandomId = () => (crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex'));
+
 const ensureTables = async () => {
+  await pool.query(`
+    CREATE EXTENSION IF NOT EXISTS pgcrypto;
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,9 +66,9 @@ const ensureTables = async () => {
 };
 
 export default async function handler(req, res) {
-  // Set CORS headers
+  // Set CORS headers for production domain
   res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://tradex-bigmoney1.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT');
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
@@ -75,13 +87,25 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database initialization failed' });
   }
 
+  if (!req.body || typeof req.body !== 'object') {
+    return res.status(400).json({ error: 'Request body must be a JSON object.' });
+  }
+
   const { fullName, username, phone, email, dob, password, withdrawPin, termsAccepted } = req.body;
 
-  if (!fullName || !username || !phone || !dob || !password || !withdrawPin || termsAccepted === undefined) {
-    return res.status(400).json({ error: 'All fields are required' });
+  if (!fullName?.trim() || !username?.trim() || !phone?.trim() || !dob?.trim() || !password?.trim() || !withdrawPin?.trim() || termsAccepted === undefined) {
+    return res.status(400).json({ error: 'Full name, username, phone, date of birth, password, withdraw PIN, and terms acceptance are required.' });
+  }
+
+  if (email && !isValidEmail(email)) {
+    return res.status(400).json({ error: 'Email address is invalid.' });
   }
 
   const age = Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
+  if (Number.isNaN(age)) {
+    return res.status(400).json({ error: 'Date of birth is invalid.' });
+  }
+
   if (age < 18) {
     return res.status(400).json({ error: 'You must be 18 or older' });
   }
@@ -94,7 +118,10 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Withdraw PIN must be 4 digits' });
   }
 
+  const client = await pool.connect();
   try {
+    await client.query('BEGIN');
+
     const passwordHash = await bcrypt.hash(password, 10);
     const withdrawPinHash = await bcrypt.hash(withdrawPin, 10);
 
@@ -103,24 +130,28 @@ export default async function handler(req, res) {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id, full_name, username, phone_number, email, date_of_birth, age, terms_accepted, created_at
     `;
-    const values = [fullName, username, phone, email || null, dob, age, passwordHash, withdrawPinHash, termsAccepted];
+    const values = [fullName.trim(), username.trim(), phone.trim(), email?.trim() || null, dob.trim(), age, passwordHash, withdrawPinHash, termsAccepted];
 
-    const result = await pool.query(query, values);
+    const result = await client.query(query, values);
     const user = result.rows[0];
 
-    await pool.query(
+    const balanceId = getRandomId();
+    await client.query(
       `INSERT INTO account_balances (id, user_id, full_name, phone_number, real_balance)
        VALUES ($1, $2, $3, $4, $5)`,
-      [crypto.randomUUID(), user.id, fullName, phone, 0]
+      [balanceId, user.id, fullName.trim(), phone.trim(), 0]
     );
 
+    await client.query('COMMIT');
     res.status(201).json({ message: 'User created successfully', user });
   } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Signup API error:', error);
     if (error.code === '23505') {
-      res.status(409).json({ error: 'Username, phone, or email already exists' });
-    } else {
-      console.error(error);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(409).json({ error: 'Username, phone, or email already exists' });
     }
+    return res.status(500).json({ error: 'Unable to create account. Please check server logs.' });
+  } finally {
+    client.release();
   }
 }

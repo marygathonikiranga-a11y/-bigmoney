@@ -22,6 +22,7 @@ const queryClient = new QueryClient();
 
 const AppContent = () => {
   const login = useStore((s) => s.login);
+  const isAuthenticated = useStore((s) => s.isAuthenticated);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
   const [walletModalTab, setWalletModalTab] = useState<"deposit" | "withdraw">("deposit");
   const [transactionPopupOpen, setTransactionPopupOpen] = useState(false);

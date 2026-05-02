@@ -26,7 +26,7 @@ const Dashboard = () => {
 
     const fetchUser = async () => {
       try {
-        const res = await fetch(apiUrl(`/api/user/${encodeURIComponent(user.username)}`));
+        const res = await fetch(apiUrl(`/api/user/by-username/${encodeURIComponent(user.username)}`));
         if (!res.ok) return;
         const data = await res.json();
         login(data.user);
@@ -45,7 +45,7 @@ const Dashboard = () => {
 
     const fetchTransactions = async () => {
       try {
-        const res = await fetch(apiUrl(`/api/user/${user.id}/transactions`));
+        const res = await fetch(apiUrl(`/api/user/by-id/${user.id}/transactions`));
         if (!res.ok) return;
         const data = await res.json();
         setTransactions(data.transactions || []);

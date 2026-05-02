@@ -57,7 +57,7 @@ const LandingPaymentPopup = ({ isOpen, onOpenChange, initialTab = "deposit" }: P
     const refreshUser = async () => {
       if (!user?.username) return;
       try {
-        const res = await fetch(apiUrl(`/api/user/${encodeURIComponent(user.username)}`));
+        const res = await fetch(apiUrl(`/api/user/by-username/${encodeURIComponent(user.username)}`));
         if (!res.ok) return;
         const data = await res.json();
         login(data.user);

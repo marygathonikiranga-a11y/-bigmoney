@@ -106,29 +106,21 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database initialization failed' });
   }
 
-  const { transactionId } = req.query;
+  const { userId } = req.query;
 
   try {
+    await applyApprovedTransactionsForUser(userId);
+
     const result = await pool.query(
-      'SELECT id, user_id, type, amount, status, processed, reference, created_at, updated_at FROM transactions WHERE id = $1',
-      [transactionId]
+      `SELECT id, type, amount, status, reference, created_at, updated_at
+       FROM transactions
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 20`,
+      [userId]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Transaction not found' });
-    }
-
-    const transaction = result.rows[0];
-    if (transaction.status === 'approved' && !transaction.processed) {
-      await applyApprovedTransactionsForUser(transaction.user_id);
-      const updatedResult = await pool.query(
-        'SELECT id, user_id, type, amount, status, processed, reference, created_at, updated_at FROM transactions WHERE id = $1',
-        [transactionId]
-      );
-      return res.status(200).json({ transaction: updatedResult.rows[0] });
-    }
-
-    res.status(200).json({ transaction });
+    res.status(200).json({ transactions: result.rows });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
