@@ -9,12 +9,14 @@ import TradePanel from "@/components/dashboard/TradePanel";
 import BottomNav from "@/components/dashboard/BottomNav";
 import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import WalletModal from "@/components/dashboard/WalletModal";
+import TradeHistoryDrawer from "@/components/dashboard/TradeHistoryDrawer";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isAuthenticated, assets, setAssets, selectedAsset, showWalletModal, setShowWalletModal, user, login } = useStore();
   const [firstLogin, setFirstLogin] = useState(true);
   const [transactions, setTransactions] = useState<Array<{id:string;type:string;amount:number;status:string;created_at:string}>>([]);
+  const [tradeHistoryOpen, setTradeHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
@@ -69,7 +71,7 @@ const Dashboard = () => {
 
   return (
     <div className="h-screen flex flex-col bg-background overflow-hidden">
-      <DashboardHeader />
+      <DashboardHeader onTradeHistoryClick={() => setTradeHistoryOpen(true)} />
       {transactions.length > 0 && (
         <div className="px-4 py-3 bg-card/70 border-b border-border/30 text-sm text-foreground">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -91,6 +93,7 @@ const Dashboard = () => {
       </div>
       <BottomNav />
       {showWalletModal && <WalletModal onClose={() => setShowWalletModal(false)} />}
+      <TradeHistoryDrawer isOpen={tradeHistoryOpen} onClose={() => setTradeHistoryOpen(false)} />
     </div>
   );
 };

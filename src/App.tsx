@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +21,7 @@ import PaymentPopup from "@/components/landing/PaymentPopup";
 const queryClient = new QueryClient();
 
 const AppContent = () => {
+  const location = useLocation();
   const login = useStore((s) => s.login);
   const isAuthenticated = useStore((s) => s.isAuthenticated);
   const [walletModalOpen, setWalletModalOpen] = useState(false);
@@ -56,32 +57,36 @@ const AppContent = () => {
     }
   }, [countdown, isCounting]);
 
+  const showWalletButtons = location.pathname === "/dashboard";
+
   return (
     <>
-      <div className="fixed top-4 z-50 flex gap-2" style={{ left: "calc(50% - 4cm)" }}>
-        <Button
-          size="sm"
-          className="w-28 bg-primary text-primary-foreground hover:bg-primary/90"
-          onClick={() => {
-            setDepositStep("phone");
-            setDepositPhone("");
-            setDepositAmount("");
-            setDepositModalOpen(true);
-          }}
-        >
-          Deposit
-        </Button>
-        <Button
-          size="sm"
-          className="w-28 bg-secondary text-secondary-foreground hover:bg-secondary/90"
-          onClick={() => {
-            setWalletModalTab("withdraw");
-            setWalletModalOpen(true);
-          }}
-        >
-          Withdraw
-        </Button>
-      </div>
+      {showWalletButtons && (
+        <div className="fixed top-4 z-50 flex gap-2" style={{ left: "calc(50% - 4cm)" }}>
+          <Button
+            size="sm"
+            className="w-28 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={() => {
+              setDepositStep("phone");
+              setDepositPhone("");
+              setDepositAmount("");
+              setDepositModalOpen(true);
+            }}
+          >
+            Deposit
+          </Button>
+          <Button
+            size="sm"
+            className="w-28 bg-secondary text-secondary-foreground hover:bg-secondary/90"
+            onClick={() => {
+              setWalletModalTab("withdraw");
+              setWalletModalOpen(true);
+            }}
+          >
+            Withdraw
+          </Button>
+        </div>
+      )}
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />

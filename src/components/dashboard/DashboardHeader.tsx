@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
-import { BarChart3, LogOut, Menu, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
+import { BarChart3, LogOut, Menu, ArrowDownCircle, ArrowUpCircle, History } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PaymentPopup from "@/components/landing/PaymentPopup";
 
-const DashboardHeader = () => {
+interface DashboardHeaderProps {
+  onTradeHistoryClick?: () => void;
+}
+
+const DashboardHeader = ({ onTradeHistoryClick }: DashboardHeaderProps) => {
   const { user, logout, switchAccountType, showMarketSidebar, setShowMarketSidebar } = useStore();
   const navigate = useNavigate();
   const [transactionPopupOpen, setTransactionPopupOpen] = useState(false);
@@ -28,6 +32,16 @@ const DashboardHeader = () => {
       </div>
 
       <div className="flex items-center gap-3">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onTradeHistoryClick}
+          className="hidden sm:flex items-center gap-2 text-xs"
+        >
+          <History className="h-4 w-4" />
+          <span>Trade History</span>
+        </Button>
+
         <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-1">
           <button
             onClick={() => switchAccountType("demo")}
