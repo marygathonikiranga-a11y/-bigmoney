@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Deposit Funds</title>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+  />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+
+  <div class="container">
+
+    <div class="logo">
+      <i class="fas fa-wallet"></i>
+    </div>
+
+    <h1>Deposit Funds</h1>
+
+    <p class="description">
+      Securely fund your account using M-Pesa
+      with fast and secure transactions.
+    </p>
+
+    <div class="input-group">
+
+      <label for="amount">
+        Deposit Amount (KES)
+      </label>
+
+      <input
+        type="number"
+        id="amount"
+        placeholder="Enter amount"
+        min="1"
+      />
+
+    </div>
+
+    <div class="price" id="displayAmount">
+      KES 0
+    </div>
+
+    <button id="payButton" class="pay-button">
+      <i class="fas fa-mobile-alt"></i>
+      Lipa na Mpesa
+    </button>
+
+    <button id="cancelButton" class="cancel-button">
+      Cancel
+    </button>
+
+  </div>
+
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+
+  <script src="script.js"></script>
+
+</body>
+</html>

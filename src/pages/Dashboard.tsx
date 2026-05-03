@@ -14,14 +14,12 @@ import TradeHistoryDrawer from "@/components/dashboard/TradeHistoryDrawer";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { isAuthenticated, assets, setAssets, selectedAsset, showWalletModal, setShowWalletModal, user, login } = useStore();
-  const [firstLogin, setFirstLogin] = useState(true);
   const [transactions, setTransactions] = useState<Array<{id:string;type:string;amount:number;status:string;created_at:string}>>([]);
   const [tradeHistoryOpen, setTradeHistoryOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) { navigate("/login"); return; }
-    if (firstLogin && user?.realBalance === 0) { setShowWalletModal(true); setFirstLogin(false); }
-  }, [isAuthenticated, navigate, firstLogin, user, setShowWalletModal]);
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.username) return;
@@ -84,9 +82,9 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
         <MarketSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           <TradingChart data={chartData} asset={currentAsset!} />
           <TradePanel asset={currentAsset!} />
         </div>

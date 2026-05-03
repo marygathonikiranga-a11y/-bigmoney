@@ -64,7 +64,7 @@ export function tickAsset(asset: MarketAsset): MarketAsset {
   };
 }
 
-export function generateCandlestickData(basePrice: number, count: number = 100) {
+export function generateCandlestickData(basePrice: number, count: number = 100, intervalMs: number = 60000) {
   const data: { time: string; open: number; close: number; high: number; low: number }[] = [];
   let price = basePrice;
   const now = Date.now();
@@ -84,7 +84,7 @@ export function generateCandlestickData(basePrice: number, count: number = 100) 
     const low = +(Math.min(open, close) - wickDown).toFixed(open < 1 ? 4 : 2);
     price = close;
     data.push({
-      time: new Date(now - i * 60000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      time: new Date(now - i * intervalMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       open, close, high, low,
     });
   }

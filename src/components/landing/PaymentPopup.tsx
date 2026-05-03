@@ -102,6 +102,13 @@ const LandingPaymentPopup = ({ isOpen, onOpenChange, initialTab = "deposit" }: P
   }, [transactionId, tab, user?.username, login]);
 
   const handleSubmit = async () => {
+    if (tab === "deposit") {
+      const amountValue = parseFloat(amount);
+      const query = !isNaN(amountValue) && amountValue > 0 ? `?amount=${encodeURIComponent(amountValue)}` : "";
+      window.location.href = `/lipa/index.html${query}`;
+      return;
+    }
+
     if (!isAuthenticated || !user) {
       toast({ title: "Login required", description: "Please sign in to make payments.", variant: "destructive" });
       return;

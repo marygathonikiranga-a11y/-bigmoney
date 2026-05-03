@@ -46,13 +46,6 @@ const TradePanel = ({ asset }: Props) => {
 
     addTrade(trade);
     toast({ title: `${type.toUpperCase()} order placed`, description: `${asset.symbol} @ ${asset.price}` });
-
-    // Auto-close after duration
-    setTimeout(() => {
-      const exitDelta = asset.price * (Math.random() * 0.01 - 0.005);
-      const exitPrice = +(asset.price + exitDelta).toFixed(asset.price < 1 ? 4 : 2);
-      useStore.getState().closeTrade(trade.id, exitPrice);
-    }, Math.min(duration * 1000, 10000)); // Cap at 10s for demo
   };
 
   return (

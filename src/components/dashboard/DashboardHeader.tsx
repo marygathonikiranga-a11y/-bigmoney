@@ -1,8 +1,14 @@
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
-import { BarChart3, LogOut, Menu, ArrowDownCircle, ArrowUpCircle, History } from "lucide-react";
+import { BarChart3, LogOut, Menu, ArrowDownCircle, ArrowUpCircle, History, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import PaymentPopup from "@/components/landing/PaymentPopup";
 
 interface DashboardHeaderProps {
@@ -36,10 +42,10 @@ const DashboardHeader = ({ onTradeHistoryClick }: DashboardHeaderProps) => {
           variant="outline"
           size="sm"
           onClick={onTradeHistoryClick}
-          className="hidden sm:flex items-center gap-2 text-xs"
+          className="flex items-center gap-2 text-xs"
         >
           <History className="h-4 w-4" />
-          <span>Trade History</span>
+          <span>View Trades</span>
         </Button>
 
         <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-1">
@@ -64,24 +70,59 @@ const DashboardHeader = ({ onTradeHistoryClick }: DashboardHeaderProps) => {
 
         {user.accountType === "real" && (
           <>
+            {/* Desktop: Separate buttons */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-foreground"
               title="Deposit"
-              onClick={() => { setTransactionTab("deposit"); setTransactionPopupOpen(true); }}
+              onClick={() => { window.location.href = "/lipa/index.html"; }}
             >
               <ArrowDownCircle className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-foreground"
               title="Withdraw"
               onClick={() => { setTransactionTab("withdraw"); setTransactionPopupOpen(true); }}
             >
               <ArrowUpCircle className="h-4 w-4" />
             </Button>
+
+            {/* Mobile: Dropdown menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="sm:hidden h-8 w-8 text-muted-foreground hover:text-foreground"
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem
+                  onClick={() => {
+                    window.location.href = "/lipa/index.html";
+                  }}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <ArrowDownCircle className="h-4 w-4 text-success" />
+                  <span>Deposit</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setTransactionTab("withdraw");
+                    setTransactionPopupOpen(true);
+                  }}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <ArrowUpCircle className="h-4 w-4 text-warning" />
+                  <span>Withdraw</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         )}
 

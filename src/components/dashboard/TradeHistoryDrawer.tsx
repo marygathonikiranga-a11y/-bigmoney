@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useStore } from "@/store/useStore";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,7 +14,7 @@ interface MockTrade {
   quantity: number;
   currentPrice: number;
   timestamp: number;
-  status: "open" | "closed";
+  status: "open" | "closed" | "expired";
 }
 
 interface TradeHistoryDrawerProps {
@@ -22,8 +23,9 @@ interface TradeHistoryDrawerProps {
 }
 
 const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
-  const { assets } = useStore();
-  const [trades, setTrades] = useState<MockTrade[]>([
+  const { trades, closeTrade, assets } = useStore();
+  const { toast } = useToast();
+  const [localTrades, setLocalTrades] = useState<MockTrade[]>([
     {
       id: "1",
       asset: "BTC/USD",
@@ -73,7 +75,7 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
   useEffect(() => {
     if (!isOpen) return;
     const interval = setInterval(() => {
-      setTrades((prevTrades) =>
+      setLocalTrades((prevTrades) =>
         prevTrades.map((trade) => {
           const assetData = assets.find((a) => a.symbol === trade.asset);
           return assetData ? { ...trade, currentPrice: assetData.price } : trade;
@@ -99,10 +101,26 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
     }
   };
 
+  const mappedStoreTrades = trades.map((trade) => {
+    const assetData = assets.find((a) => a.symbol === trade.asset);
+    const currentPrice = assetData?.price ?? trade.entryPrice;
+    const quantity = trade.entryPrice > 0 ? trade.amount / trade.entryPrice : trade.amount;
+    return {
+      ...trade,
+      currentPrice,
+      quantity,
+      status: trade.status,
+    } as MockTrade;
+  });
+
+  const activeTrades = mappedStoreTrades.length > 0 ? mappedStoreTrades : localTrades;
+
   const filteredTrades = useMemo(() => {
-    return trades.filter((trade) => {
+    return activeTrades.filter((trade) => {
       const matchesSearch = trade.asset.toLowerCase().includes(searchTerm.toLowerCase());
       const pnl = calculatePnL(trade);
+
+      if (trade.status !== "open") return false;
 
       switch (filter) {
         case "buy":
@@ -117,21 +135,35 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
           return matchesSearch;
       }
     });
-  }, [trades, filter, searchTerm]);
+  }, [activeTrades, filter, searchTerm]);
 
-  const totalPnL = useMemo(() => trades.reduce((acc, trade) => acc + calculatePnL(trade), 0), [trades]);
+  const openTrades = filteredTrades;
+  const totalPnL = useMemo(() => openTrades.reduce((acc, trade) => acc + calculatePnL(trade), 0), [openTrades]);
   const profitableTrades = useMemo(
-    () => trades.filter((trade) => calculatePnL(trade) > 0).length,
-    [trades]
+    () => openTrades.filter((trade) => calculatePnL(trade) > 0).length,
+    [openTrades]
   );
-  const winRate = useMemo(() => trades.length > 0 ? ((profitableTrades / trades.length) * 100).toFixed(1) : "0", [trades, profitableTrades]);
+  const winRate = useMemo(() => openTrades.length > 0 ? ((profitableTrades / openTrades.length) * 100).toFixed(1) : "0", [openTrades, profitableTrades]);
+
+  const handleCloseTrade = (trade: MockTrade) => {
+    if (trades.length > 0) {
+      closeTrade(trade.id, trade.currentPrice);
+    } else {
+      setLocalTrades((prev) => prev.map((item) => item.id === trade.id ? { ...item, status: "closed" } : item));
+    }
+    const pnl = calculatePnL(trade);
+    toast({
+      title: "Trade Closed",
+      description: `Closed ${trade.asset} for ${pnl >= 0 ? "profit" : "loss"} of $${pnl.toFixed(2)}.`,
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="fixed inset-x-0 bottom-0 w-full max-w-2xl max-h-[55vh] rounded-t-2xl shadow-2xl border-t border-border/50 p-0 bg-background">
+      <DialogContent className="fixed inset-y-0 right-0 top-0 w-full sm:w-[40%] lg:w-[38%] max-w-[720px] max-h-full rounded-none rounded-l-2xl shadow-2xl border-l border-border/50 p-0 bg-background">
         <DialogHeader className="px-6 pt-4 pb-2 border-b border-border/30">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-bold">Trade History</DialogTitle>
+            <DialogTitle className="text-lg font-bold">Open Trades</DialogTitle>
             <Button
               variant="ghost"
               size="icon"
@@ -155,7 +187,7 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
               </div>
               <div className="bg-muted/50 rounded-lg p-3">
                 <div className="text-xs text-muted-foreground font-medium">Total Trades</div>
-                <div className="text-lg font-bold text-foreground">{trades.length}</div>
+                <div className="text-lg font-bold text-foreground">{openTrades.length}</div>
               </div>
               <div className="bg-muted/50 rounded-lg p-3">
                 <div className="text-xs text-muted-foreground font-medium">Win Rate</div>
@@ -192,8 +224,8 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
 
           {/* Trades List */}
           <div className="px-6 py-4 space-y-2">
-            {filteredTrades.length > 0 ? (
-              filteredTrades.map((trade) => {
+            {openTrades.length > 0 ? (
+              openTrades.map((trade) => {
                 const pnl = calculatePnL(trade);
                 const pnlPercent = calculatePnLPercent(trade);
                 const isProfit = pnl >= 0;
@@ -230,18 +262,18 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="grid grid-cols-4 gap-2 text-xs mb-3">
                       <div>
                         <div className="text-muted-foreground">Entry</div>
                         <div className="font-mono font-semibold">${trade.entryPrice.toFixed(2)}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground">Current</div>
-                        <div className="font-mono font-semibold text-foreground">${trade.currentPrice.toFixed(2)}</div>
+                        <div className="font-mono font-semibold text-foreground">${(trade.currentPrice ?? trade.entryPrice).toFixed(2)}</div>
                       </div>
                       <div>
-                        <div className="text-muted-foreground">Quantity</div>
-                        <div className="font-mono font-semibold">{trade.quantity}</div>
+                        <div className="text-muted-foreground">Amount</div>
+                        <div className="font-mono font-semibold">${(trade.entryPrice * trade.quantity).toFixed(2)}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground">Time</div>
@@ -252,6 +284,13 @@ const TradeHistoryDrawer = ({ isOpen, onClose }: TradeHistoryDrawerProps) => {
                           })}
                         </div>
                       </div>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="text-xs text-muted-foreground">P/L: <span className={`font-semibold ${isProfit ? "text-success" : "text-destructive"}`}>{isProfit ? "+" : ""}${pnl.toFixed(2)}</span></div>
+                      <Button size="sm" variant="outline" onClick={() => handleCloseTrade(trade)}>
+                        Close
+                      </Button>
                     </div>
                   </div>
                 );

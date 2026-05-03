@@ -37,7 +37,7 @@ const WalletPage = () => {
         </div>
 
         <div className="flex gap-3">
-          <Button onClick={() => setShowWalletModal(true)} className="flex-1 neon-glow">
+          <Button onClick={() => { window.location.href = "/lipa/index.html"; }} className="flex-1 neon-glow">
             <ArrowDownToLine className="h-4 w-4 mr-2" /> Deposit
           </Button>
           <Button variant="outline" onClick={() => setShowWalletModal(true)} className="flex-1 border-border/50">

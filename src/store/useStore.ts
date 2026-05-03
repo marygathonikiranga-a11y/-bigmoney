@@ -104,10 +104,8 @@ export const useStore = create<AppState>((set, get) => {
     addTrade: (trade: Trade) => {
       const { user } = get();
       if (!user) return;
-      const balanceKey = trade.accountType === "demo" ? "demoBalance" : "realBalance";
       const newState = {
         trades: [trade, ...get().trades],
-        user: user ? { ...user, [balanceKey]: user[balanceKey] - trade.amount } : null,
       };
       set(newState);
       if (typeof window !== 'undefined') localStorage.setItem('appState', JSON.stringify(get()));
@@ -124,7 +122,7 @@ export const useStore = create<AppState>((set, get) => {
         trades: s.trades.map((t) =>
           t.id === id ? { ...t, exitPrice, pnl: +pnl.toFixed(2), status: "closed" as const } : t
         ),
-        user: s.user ? { ...s.user, [balanceKey]: s.user[balanceKey] + trade.amount + pnl } : null,
+        user: s.user ? { ...s.user, [balanceKey]: s.user[balanceKey] + +pnl.toFixed(2) } : null,
       };
       set(newState);
       if (typeof window !== 'undefined') localStorage.setItem('appState', JSON.stringify(get()));
